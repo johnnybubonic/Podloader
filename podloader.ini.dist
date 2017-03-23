@@ -1,0 +1,153 @@
+## Podloader config ##
+
+[rsync]
+# The server the files go to
+host = domain.tld
+
+# The remote path root. This must be a full/absolute path!
+path = /srv/http/myVhostDir
+
+# The remote user
+user = sshuser
+
+[mysql]
+# The mysql server. Note that this will be overridden if you
+# use a .my.cnf and a host is specified in there.
+host = db.${rsync:host}
+
+# The mysql server's port. Note that this will be overridden
+# if you use a .my.cnf and a port is specified in there.
+port = 3306
+
+# The mysql user. Note that this will be overridden if you
+# use a .my.cnf and a user is specified in there.
+user = mysqluser
+
+# The mysql DB. Note that this will be overridden if you
+# use a .my.cnf and a user is specified in there.
+db = myDB
+
+# The mysql table
+table = myTBL
+
+# The column names (separated by commas) for, in order:
+# episode ID (e.g. "S1E2")
+# file_prefix (the filename only WITHOUT .ogg/.mp3)
+# sha_mp3 (the column to hold the SHA256 of the MP3 file)
+# sha_ogg (the column to hold the SHA256 of the OGG file)
+# bytesize_mp3 (size of the MP3 file in bytes)
+# bytesize_ogg (size of the OGG file in bytes)
+# length (the length of the track in seconds)
+# editor (the name of the person that edited the audio track(s)
+# intro_title (the title of the intro music track)
+# intro_artist (the artist that composed the intro music track)
+# intro_link (a URL to the intro track or artist's site/page)
+# intro_copyright (the copyright license for the intro track, e.g. "CC-BY-SA 3.0")
+# intro_copyrightlink (a URL to the full terms of the intro track's copyright)
+# outro_title (the title of the outro music track)
+# outro_artist (the artist that composed the outro music track)
+# outro_link (a URL to the outro track or artist's site/page)
+# outro_copyright (the copyright license for the outro track, e.g. "CC-BY-SA 3.0")
+# outro_copyrightlink (a URL to the full terms of the outro track's copyright)
+# recorded (when the episode was recorded)
+# released (when the episode was released)
+#
+# Note that a dump of the *table* is included (blank.schema.sql). Feel free to use it:
+#       mysql -e "CREATE DATABASE myDB" && mysql myDB < blank.schema.sql
+# This will create a database named "myDB" (you can skip that part if you already have a database),
+# and create a table named "myTBL" according to the default spec outlined in here.
+#
+cols = episode,file_prefix,sha_mp3,sha_ogg,bytesize_mp3,bytesize_ogg,length,editor,intro_title,intro_artist,intro_link,intro_copyright,intro_copyrightlink,outro_title,outro_artist,outro_link,outro_copyright,outro_copyrightlink,recorded,released
+
+# The remote mysql password - if this is set to False/no/0,
+# we'll just use the my.cnf-formatted INI file (e.g. ~/.my.cnf) instead.
+password = False
+
+# If the above is False, path to the .my.cnf
+conf = ~/.my.cnf
+
+# If password is False, what [client] section suffix should we use?
+# Note that this is going to look like e.g. [clientremote1] in the config
+# file. (correlates to mysql's --defaults-group-suffix=)
+confsec = remote1
+
+[gpg]
+# Should we actually sign episodes? True/yes/1 or False/no/0.
+enabled = True
+
+# The GPG key ID(s) (in a comma-separated list) to sign the episode with.
+# You must have the private key in your *local* keyring!
+keys = D34DB33FD34DB33FD34DB33FD34DB33FD34DB33F
+
+# The path to your GNUPG homedir.
+homedir = ~/.gnupg
+
+[local]
+# The local path root to the edited FLAC files
+path = ~/podcast
+
+# A subdir for the episode-specific files. If it contains one of the following values,
+# substitution will be done.
+# Special values:
+# - SEASONEPISODE = A special string that uses the -s/--season and -e/--episode strings together.
+#	i.e. if season is 1 and episode is 13, it'd be "s1e13".
+# - SEASON = A special string that uses -s/--season.
+# - EPISODE = A special string that uses -e/--episode.
+subdir = SEASONEPISODE
+
+# Where the transcoded media and GPG sigs (if enabled) should go
+# (in a structure of <path>/<season>/<episode>/{mp3,ogg,gpg}/)
+mediadir = ${path}/releases
+
+[tags]
+# What should the Artist string be?
+artist = Podcastin' Joe
+
+# What should the Album name be?
+# If you set this to SEASON, it will set this to whatever's specified for -s/--season
+album = SEASON
+
+# How many digits should the season be padded to? (i.e. the minimum number of digits)
+# A pad of three would have Season 3 be "003".
+season_pad = 1
+
+# How many digits should the episode be padded to? (i.e. the minimum number of digits)
+# A pad of three would have Episode 1 be "001".
+episode_pad = 1
+
+# What should the Year be set to?
+# If set as False/no/0, it will be automatically determined by the raw media file's metadata.
+year = False
+
+# What track number should be set?
+# If set as EPISODE, it will set this to whatever's specified for -e/--episode
+track = EPISODE
+
+# What genre should be set?
+genre = Podcast
+
+# What should be set as the comment field?
+comment = https://podcast.domain.tld
+
+# What should be set as the Copyright notice?
+copyright = CC-BY-SA 4.0
+
+# What should be set for the URL field?
+# Special values:
+# - SEASONEPISODE = A special string that uses the -s/--season and -e/--episode strings together.
+#	i.e. if season is 1 and episode is 13, it'd be "S1E13".
+# - SEASON = A special string that uses -s/--season.
+# - EPISODE = A special string that uses -e/--episode.
+url = ${comment}/episodes/SEASONEPISODE
+
+# Who encoded the file? (e.g. what is your name)
+encoded = Joe Schmoe
+
+# Who edited the episode? (see -d/--editor)
+# Note that this can contain (and should, if available)
+# contain a link (e.g.:
+# <a href="https://editorname.tld">Editor Name</a> )
+editor = <a href="${comment}/editor">Some Editor</a>
+
+# A local path to the image to embed.
+img = ${local:path}/images/podcast_logo.jpg
