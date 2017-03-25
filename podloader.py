@@ -9,7 +9,7 @@ import base64
 import subprocess
 import hashlib
 import datetime
-import io
+from io import BytesIO
 # You might need to install these modules; they aren't in stdlib.
 import pymysql
 import magic
@@ -280,14 +280,14 @@ def imgConv(imgfile):
             #else:
             #    imgformat = 'PNG'
             img_stream = BytesIO()
-            p.save(img_stream,
-                    format = 'JPEG',
-                    dpi = img_data.info.get('dpi'),
-                    quality = 95,
-                    optimize = True,
-                    progressive = False,
-                    icc_profile = img_data.info.get('icc_profile'),
-                    subsampling = 'keep')
+            img_data.save(img_stream,
+                          format = 'JPEG',
+                          dpi = img_data.info.get('dpi'),
+                          quality = 95,
+                          optimize = True,
+                          progressive = False,
+                          icc_profile = img_data.info.get('icc_profile'),
+                          subsampling = 'keep')
             # Be kind, please rewind.
             # Don't sue me, Blockbuster. lol
             img_stream.seek(0)
