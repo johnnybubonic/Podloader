@@ -498,7 +498,7 @@ def uploadFile():
 def argParse():
     parser = argparse.ArgumentParser(
                             description = 'PodLoader - a script to assist in Textpattern-powered podcasts',
-                            prog = 'podloader v1.0')
+                            prog = 'podloader v1.1')
     requiredArgs = parser.add_argument_group('REQUIRED arguments')
     requiredArgs.add_argument('-t',
                             '--title',
