@@ -291,6 +291,7 @@ def imgConv(imgfile):
             # Be kind, please rewind.
             # Don't sue me, Blockbuster. lol
             img_stream.seek(0)
+            img_stream = img_stream.read()
         else:
             with open(imgfile) as f:
                 img_stream = f.read()
@@ -308,11 +309,11 @@ def tagMP3(conf, mediafile):
     tag.add(TALB(encoding = 3,
                  text = [conf['tags']['album']]))
     tag.add(APIC(encoding = 3,
-                 mime = imgmime,
+                 mime = img_meta['mime'],
                  type = 3,
                  desc = '{0} ({1})'.format(conf['tags']['artist'],
                                            conf['tags']['comment']),
-                 data = img_stream.read()))
+                 data = img_stream))
     tag.add(TDRC(encoding = 3,
                  text = ['{0}.{1}.{2}'.format(conf['tags']['year'],
                                               conf['episode']['month'],
@@ -338,7 +339,6 @@ def tagMP3(conf, mediafile):
     tag.add(TCOP(encoding = 3,
                  text = [conf['tags']['copyright']]))
     tag.save()
-    img_stream.seek(0)
 
 def tagOGG(conf, mediafile):
     # https://mutagen.readthedocs.io/en/latest/user/vcomment.html
@@ -354,7 +354,9 @@ def tagOGG(conf, mediafile):
     picture.mime = img_meta['mime']
     picture.width = img_meta['width']
     picture.height = img_meta['height']
-    picture.depth = img_meta['bits']
+    picture.depth = img_meta['depth']
+    picture.desc = '{0} ({1})'.format(conf['tags']['artist'],
+                                      conf['tags']['comment'])
     containered_data = picture.write()
     encoded_data = base64.b64encode(containered_data)
     img_tag = encoded_data.decode('ascii')
@@ -375,7 +377,6 @@ def tagOGG(conf, mediafile):
     tag['ENCODER'] = conf['tags']['encoded']
     tag['METADATA_BLOCK_PICTURE'] = [img_tag]
     tag.save()
-    img_stream.seek(0)
 
 def getSHA256(mediafile):
     print('{0}: Generating SHA256 for {1}...'.format(datetime.datetime.now(),
