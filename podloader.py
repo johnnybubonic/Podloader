@@ -9,7 +9,7 @@ import base64
 import subprocess
 import hashlib
 import datetime
-import io
+from io import BytesIO
 # You might need to install these modules; they aren't in stdlib.
 import pymysql
 import magic
