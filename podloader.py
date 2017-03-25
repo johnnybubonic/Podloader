@@ -440,7 +440,8 @@ def dbEntry(conf):
         print('{0}: There seems to have been some error when inserting into the DB. Check access (or it is a dupe).'.format(
                                                 datetime.datetime.now()))
 
-def signEp(mediatype):
+def signEp(mediatype, conf):
+    # No reason to call this for each file. Fix.
     os.makedirs('{0}/gpg'.format(conf['local']['mediadir']), exist_ok = True)
     sigfile = '{0}/gpg/{1}.{2}.asc'.format(conf['local']['mediadir'],
                                             conf['episode']['file_title'],
@@ -486,7 +487,10 @@ def signEp(mediatype):
                         gpg.sign(f, s, gpgme.SIG_MODE_DETACH)
     return(sigfile)
 
-def uploadFile():
+def uploadFile(conf):
+    # TODO: Can we do this via paramiko? That way we can check for the destination dir
+    # and create if it doesn't exist.
+    # Also, no reason to call this for each file.
     print('{0}: Syncing files to server...'.format(datetime.datetime.now()))
     subprocess.call(['rsync',
                     '-a',
@@ -607,9 +611,9 @@ def main():
     conf['episode']['size']['mp3'] = getSize(mp3)
     conf['episode']['size']['ogg'] = getSize(ogg)
     dbEntry(conf)
-    signEp('mp3')
-    signEp('ogg')
-    uploadFile()
+    signEp('mp3', conf)
+    signEp('ogg', conf)
+    uploadFile(conf)
     print('{0}: Finished.'.format(datetime.datetime.now()))
 
 if __name__ == '__main__':
