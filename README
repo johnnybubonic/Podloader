@@ -1,0 +1,3 @@
+This script prepares, tags, signs, syncs, etc. episodes for the podcast Sysadministrivia (https://sysadministrivia.com/).
+
+It's pretty self-explanatory, though- copy podloader.ini.dist to a file called podloader.ini and read through the comments for more info.
