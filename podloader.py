@@ -271,21 +271,21 @@ def tagMP3(conf, mediafile):
         img_data = f.read()
     print('{0}: Now adding tags to {1}...'.format(datetime.datetime.now(), mediafile))
     tag = ID3(mediafile)
-    tag.add(TALB(encoding = 0, text = [conf['tags']['album']]))
-    tag.add(APIC(encoding = 0, mime = imgmime, type = 3,
+    tag.add(TALB(encoding = 3, text = [conf['tags']['album']]))
+    tag.add(APIC(encoding = 3, mime = imgmime, type = 3,
                 desc = conf['tags']['artist'], data = img_data))
-    tag.add(TDRC(encoding = 0, text = ['{0}.{1}.{2}'.format(conf['tags']['year'],
+    tag.add(TDRC(encoding = 3, text = ['{0}.{1}.{2}'.format(conf['tags']['year'],
                                                         conf['episode']['month'],
                                                         conf['episode']['day'])]))
-    tag.add(TENC(encoding = 0, text = [conf['tags']['encoded']]))
-    tag.add(TRCK(encoding = 0, text = [conf['tags']['track']]))
-    tag.add(COMM(encoding = 0, lang = '\x00\x00\x00', desc = '',
+    tag.add(TENC(encoding = 3, text = [conf['tags']['encoded']]))
+    tag.add(TRCK(encoding = 3, text = [conf['tags']['track']]))
+    tag.add(COMM(encoding = 3, lang = '\x00\x00\x00', desc = '',
                 text = [conf['tags']['comment']]))
-    tag.add(WXXX(encoding = 0, desc = '', url = conf['tags']['url']))
-    tag.add(TCON(encoding = 0, text = [conf['tags']['genre']]))
-    tag.add(TIT2(encoding = 0, text = [conf['episode']['pretty_title']]))
-    tag.add(TPE1(encoding = 0, text = [conf['tags']['artist']]))
-    tag.add(TCOP(encoding = 0, text = [conf['tags']['copyright']]))
+    tag.add(WXXX(encoding = 3, desc = '', url = conf['tags']['url']))
+    tag.add(TCON(encoding = 3, text = [conf['tags']['genre']]))
+    tag.add(TIT2(encoding = 3, text = [conf['episode']['pretty_title']]))
+    tag.add(TPE1(encoding = 3, text = [conf['tags']['artist']]))
+    tag.add(TCOP(encoding = 3, text = [conf['tags']['copyright']]))
     tag.save()
 
 def tagOGG(conf, mediafile):
