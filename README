@@ -3,3 +3,5 @@ This script prepares, tags, signs, syncs, etc. episodes for the podcast Sysadmin
 It's pretty self-explanatory, though- copy podloader.ini.dist to a file called podloader.ini and read through the comments for more info.
 
 Upstream is at https://git.square-r00t.net/ but I keep a mirror at https://github.com/johnnybubonic/Podloader
+
+Bug reports/feature requests can go here: https://bugs.square-r00t.net/index.php?project=11
