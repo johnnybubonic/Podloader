@@ -288,12 +288,12 @@ def imgConv(imgfile):
                     progressive = False,
                     icc_profile = img_data.info.get('icc_profile'),
                     subsampling = 'keep')
+            # Be kind, please rewind.
+            # Don't sue me, Blockbuster. lol
+            img_stream.seek(0)
         else:
             with open(imgfile) as f:
                 img_stream = f.read()
-    # Be kind, please rewind.
-    # Don't sue me, Blockbuster. lol
-    img_stream.seek(0)
     return(img_stream, img_meta)
 
 
@@ -338,6 +338,7 @@ def tagMP3(conf, mediafile):
     tag.add(TCOP(encoding = 3,
                  text = [conf['tags']['copyright']]))
     tag.save()
+    img_stream.seek(0)
 
 def tagOGG(conf, mediafile):
     # https://mutagen.readthedocs.io/en/latest/user/vcomment.html
@@ -374,6 +375,7 @@ def tagOGG(conf, mediafile):
     tag['ENCODER'] = conf['tags']['encoded']
     tag['METADATA_BLOCK_PICTURE'] = [img_tag]
     tag.save()
+    img_stream.seek(0)
 
 def getSHA256(mediafile):
     print('{0}: Generating SHA256 for {1}...'.format(datetime.datetime.now(),
