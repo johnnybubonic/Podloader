@@ -9,12 +9,15 @@ import base64
 import subprocess
 import hashlib
 import datetime
+import io
+# You might need to install these modules; they aren't in stdlib.
 import pymysql
 import magic
 import gpgme
 from mutagen.id3 import ID3, APIC, TALB, TDRC, TENC, TRCK, COMM, WXXX, TCON, TIT2, TPE1, TCOP
 from mutagen.oggvorbis import OggVorbis
 from mutagen.flac import Picture
+from PIL import Image  # This is really pillowtalk for what I'm using. I don't think PIL proper ever released a py3k version.
 
 dflt_config_paths = ['~/.podloader.ini',
                     '~/.podloader/podloader.ini',
@@ -267,29 +270,71 @@ def tagMP3(conf, mediafile):
     magic_file = magic.open(magic.MAGIC_MIME)
     magic_file.load()
     imgmime = magic_file.file(conf['tags']['img']).split(';')[0]
-    with open(conf['tags']['img'], 'rb') as f:
-        img_data = f.read()
+    # Rockbox (and probably some other clients) don't like progressive JPEGs and stuff. SO let's fix that.
+    # Thanks to the io module, we don't even need to write a new file out.
+    img_meta = {}
+    with Image.open(conf['tags']['img']) as img_data:
+        img_meta['height'] = img_data.height
+        img_meta['width'] = img_data.width
+        img_meta['depth'] = img_data.bits
+        # And we need to remove the progressiveness if it exists.
+        if 'progressive' in img_data.info.keys():
+            # This isn't strictly necessary since we explicitly specify format = 'JPEG' when saving.
+            #if p.format in ('JPEG', 'PNG'):
+            #    imgformat = img_data.format
+            #else:
+            #    imgformat = 'PNG'
+            img_stream = BytesIO()
+            p.save(img_stream,
+                    format = 'JPEG',
+                    dpi = img_data.info.get('dpi'),
+                    quality = 95,
+                    optimize = True,
+                    progressive = False,
+                    icc_profile = img_data.info.get('icc_profile'),
+                    subsampling = 'keep')
+        else:
+            with open(conf['tags']['img']) as f:
+                img_stream = f.read()
+    # Be kind, please rewind.
+    # Don't sue me, Blockbuster. lol
+    img_stream.seek(0)
     print('{0}: Now adding tags to {1}...'.format(datetime.datetime.now(), mediafile))
     tag = ID3(mediafile)
-    tag.add(TALB(encoding = 3, text = [conf['tags']['album']]))
-    tag.add(APIC(encoding = 3, mime = imgmime, type = 3,
-                desc = conf['tags']['artist'], data = img_data))
-    tag.add(TDRC(encoding = 3, text = ['{0}.{1}.{2}'.format(conf['tags']['year'],
-                                                        conf['episode']['month'],
-                                                        conf['episode']['day'])]))
-    tag.add(TENC(encoding = 3, text = [conf['tags']['encoded']]))
-    tag.add(TRCK(encoding = 3, text = [conf['tags']['track']]))
-    tag.add(COMM(encoding = 3, lang = '\x00\x00\x00', desc = '',
-                text = [conf['tags']['comment']]))
-    tag.add(WXXX(encoding = 3, desc = '', url = conf['tags']['url']))
-    tag.add(TCON(encoding = 3, text = [conf['tags']['genre']]))
-    tag.add(TIT2(encoding = 3, text = [conf['episode']['pretty_title']]))
-    tag.add(TPE1(encoding = 3, text = [conf['tags']['artist']]))
-    tag.add(TCOP(encoding = 3, text = [conf['tags']['copyright']]))
+    tag.add(TALB(encoding = 3,
+                 text = [conf['tags']['album']]))
+    tag.add(APIC(encoding = 3,
+                 mime = imgmime,
+                 type = 3,
+                 desc = '{0} ({1})'.format(conf['tags']['artist'],
+                                           conf['tags']['comment']),
+                 data = img_stream.read()))
+    tag.add(TDRC(encoding = 3,
+                 text = ['{0}.{1}.{2}'.format(conf['tags']['year'],
+                                              conf['episode']['month'],
+                                              conf['episode']['day'])]))
+    tag.add(TENC(encoding = 3,
+                 text = [conf['tags']['encoded']]))
+    tag.add(TRCK(encoding = 3,
+                 text = [conf['tags']['track']]))
+    tag.add(COMM(encoding = 3,
+                 lang = '\x00\x00\x00',
+                 desc = 'Description provided by Podloader. https://git.square-r00t.net/Podloader',
+                 text = [conf['tags']['comment']]))
+    tag.add(WXXX(encoding = 3,
+                 desc = conf['tags']['artist'],
+                 url = conf['tags']['url']))
+    tag.add(TCON(encoding = 3,
+                 text = [conf['tags']['genre']]))
+    tag.add(TIT2(encoding = 3,
+                 text = [conf['episode']['pretty_title']]))
+    tag.add(TPE1(encoding = 3,
+                 text = [conf['tags']['artist']]))
+    tag.add(TCOP(encoding = 3,
+                 text = [conf['tags']['copyright']]))
     tag.save()
 
 def tagOGG(conf, mediafile):
-    # It seems we can't use this method.
     # https://mutagen.readthedocs.io/en/latest/user/vcomment.html
     # https://wiki.xiph.org/VorbisComment#METADATA_BLOCK_PICTURE
     # https://xiph.org/flac/format.html#metadata_block_picture
@@ -298,7 +343,19 @@ def tagOGG(conf, mediafile):
     magic_file.load()
     imgmime = magic_file.file(conf['tags']['img']).split(';')[0]
     with open(conf['tags']['img'], 'rb') as f:
-        img_b64 = base64.b64encode(f.read())
+        img_raw = f.read()
+    picture = Picture()
+    picture.data = img_raw
+    picture.type = 3
+    picture.description = '{0} ({1})'.format(conf['tags']['artist'],
+                                    conf['tags']['comment'])
+    picture.mime = imgmime
+    picture.width = 3000
+    picture.height = 3000
+    picture.depth = 24
+    picture_data = picture.write()
+    encoded_data = base64.b64encode(picture_data)
+    vcomment_value = encoded_data.decode("ascii"
     print('{0}: Now adding tags to {1}...'.format(datetime.datetime.now(), mediafile))
     tag = OggVorbis(mediafile)
     tag['TITLE'] = conf['episode']['pretty_title']
@@ -314,7 +371,7 @@ def tagOGG(conf, mediafile):
     tag['CONTACT'] = conf['tags']['url']
     tag['ENCODED-BY'] = conf['tags']['encoded']
     tag['ENCODER'] = conf['tags']['encoded']
-    tag['METADATA_BLOCK_PICTURE'] = img_b64.decode('utf-8')
+    tag['METADATA_BLOCK_PICTURE'] = img_stream
     tag.save()
 
 def getSHA256(mediafile):
