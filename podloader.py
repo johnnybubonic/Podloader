@@ -261,19 +261,14 @@ def transcodeOGG(conf):
                     mediafile])
     return(mediafile)
 
-def tagMP3(conf, mediafile):
-    # This appears to not work.
-    # http://id3.org/id3v2.3.0#Attached_picture
-    # http://id3.org/id3v2.4.0-frames (section 4.14)
-    # https://stackoverflow.com/questions/7275710/mutagen-how-to-detect-and-embed-album-art-in-mp3-flac-and-mp4
-    # https://stackoverflow.com/questions/409949/how-do-you-embed-album-art-into-an-mp3-using-python
-    magic_file = magic.open(magic.MAGIC_MIME)
-    magic_file.load()
-    imgmime = magic_file.file(conf['tags']['img']).split(';')[0]
+def imgConv(imgfile):
     # Rockbox (and probably some other clients) don't like progressive JPEGs and stuff. SO let's fix that.
     # Thanks to the io module, we don't even need to write a new file out.
     img_meta = {}
-    with Image.open(conf['tags']['img']) as img_data:
+    magic_file = magic.open(magic.MAGIC_MIME)
+    magic_file.load()
+    img_meta['mime'] = magic_file.file(imgfile).split(';')[0]
+    with Image.open(imgfile) as img_data:
         img_meta['height'] = img_data.height
         img_meta['width'] = img_data.width
         img_meta['depth'] = img_data.bits
@@ -294,11 +289,20 @@ def tagMP3(conf, mediafile):
                     icc_profile = img_data.info.get('icc_profile'),
                     subsampling = 'keep')
         else:
-            with open(conf['tags']['img']) as f:
+            with open(imgfile) as f:
                 img_stream = f.read()
     # Be kind, please rewind.
     # Don't sue me, Blockbuster. lol
     img_stream.seek(0)
+    return(img_stream, img_meta)
+
+
+def tagMP3(conf, mediafile):
+    # http://id3.org/id3v2.3.0#Attached_picture
+    # http://id3.org/id3v2.4.0-frames (section 4.14)
+    # https://stackoverflow.com/questions/7275710/mutagen-how-to-detect-and-embed-album-art-in-mp3-flac-and-mp4
+    # https://stackoverflow.com/questions/409949/how-do-you-embed-album-art-into-an-mp3-using-python
+    img_stream, img_meta = imgConv(conf['tags']['img'])
     print('{0}: Now adding tags to {1}...'.format(datetime.datetime.now(), mediafile))
     tag = ID3(mediafile)
     tag.add(TALB(encoding = 3,
@@ -318,7 +322,8 @@ def tagMP3(conf, mediafile):
     tag.add(TRCK(encoding = 3,
                  text = [conf['tags']['track']]))
     tag.add(COMM(encoding = 3,
-                 lang = '\x00\x00\x00',
+                 #lang = '\x00\x00\x00',  # I'm not sure why we're sending three NULLs, but best to be explicit.
+                 lang = 'eng',
                  desc = 'Description provided by Podloader. https://git.square-r00t.net/Podloader',
                  text = [conf['tags']['comment']]))
     tag.add(WXXX(encoding = 3,
@@ -339,23 +344,19 @@ def tagOGG(conf, mediafile):
     # https://wiki.xiph.org/VorbisComment#METADATA_BLOCK_PICTURE
     # https://xiph.org/flac/format.html#metadata_block_picture
     # https://github.com/quodlibet/mutagen/issues/200
-    magic_file = magic.open(magic.MAGIC_MIME)
-    magic_file.load()
-    imgmime = magic_file.file(conf['tags']['img']).split(';')[0]
-    with open(conf['tags']['img'], 'rb') as f:
-        img_raw = f.read()
+    img_stream, img_meta = imgConv(conf['tags']['img'])
     picture = Picture()
-    picture.data = img_raw
+    picture.data = img_stream
     picture.type = 3
     picture.description = '{0} ({1})'.format(conf['tags']['artist'],
-                                    conf['tags']['comment'])
-    picture.mime = imgmime
-    picture.width = 3000
-    picture.height = 3000
-    picture.depth = 24
-    picture_data = picture.write()
-    encoded_data = base64.b64encode(picture_data)
-    vcomment_value = encoded_data.decode("ascii"
+                                             conf['tags']['comment'])
+    picture.mime = img_meta['mime']
+    picture.width = img_meta['width']
+    picture.height = img_meta['height']
+    picture.depth = img_meta['bits']
+    containered_data = picture.write()
+    encoded_data = base64.b64encode(containered_data)
+    img_tag = encoded_data.decode('ascii')
     print('{0}: Now adding tags to {1}...'.format(datetime.datetime.now(), mediafile))
     tag = OggVorbis(mediafile)
     tag['TITLE'] = conf['episode']['pretty_title']
@@ -371,7 +372,7 @@ def tagOGG(conf, mediafile):
     tag['CONTACT'] = conf['tags']['url']
     tag['ENCODED-BY'] = conf['tags']['encoded']
     tag['ENCODER'] = conf['tags']['encoded']
-    tag['METADATA_BLOCK_PICTURE'] = img_stream
+    tag['METADATA_BLOCK_PICTURE'] = [img_tag]
     tag.save()
 
 def getSHA256(mediafile):
@@ -379,7 +380,7 @@ def getSHA256(mediafile):
                                                     mediafile))
     filehash = hashlib.sha256()
     with open(mediafile, 'rb') as f:
-        for chunk in iter(lambda: f.read(4096), b""):
+        for chunk in iter(lambda: f.read(4096), b''):
             filehash.update(chunk)
     return(filehash.hexdigest())
 
@@ -592,7 +593,7 @@ def argParse():
         exit(1)
     return(args)
 
-if __name__ ==  "__main__":
+def main():
     conf = confArgs(configParse(), argParse())
     mp3 = transcodeMP3(conf)
     tagMP3(conf, mp3)
@@ -607,3 +608,6 @@ if __name__ ==  "__main__":
     signEp('ogg')
     uploadFile()
     print('{0}: Finished.'.format(datetime.datetime.now()))
+
+if __name__ == '__main__':
+    main()
