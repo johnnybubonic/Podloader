@@ -18,6 +18,7 @@ from mutagen.id3 import ID3, APIC, TALB, TDRC, TENC, TRCK, COMM, WXXX, TCON, TIT
 from mutagen.oggvorbis import OggVorbis
 from mutagen.flac import Picture
 from PIL import Image  # This is really pillowtalk for what I'm using. I don't think PIL proper ever released a py3k version.
+# Note: also requires ffmpeg to be installed.
 
 dflt_config_paths = ['~/.podloader.ini',
                     '~/.podloader/podloader.ini',
