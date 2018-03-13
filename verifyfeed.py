@@ -11,6 +11,7 @@ try:
     from lxml import etree
 except ImportError:
     import xml.etree.ElementTree as etree
+# TODO: GPG verification too
 
 baseurl = 'https://sysadministrivia.com'
 
