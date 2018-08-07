@@ -158,7 +158,8 @@ def confArgs(conf, args):
             exit('ERROR: We cannot seem to locate a FLAC to convert. Try using the -f/--file argument.')
     magic_file = magic.open(magic.MAGIC_MIME)
     magic_file.load()
-    if not magic_file.file(conf['episode']['raw']) == 'audio/x-flac; charset=binary':
+    if magic_file.file(conf['episode']['raw']) not in ('audio/x-flac; charset=binary',
+                                                       'audio/flac; charset=binary'):
         exit('ERROR: Your FLAC file does not seem to actually be FLAC.')
     conf['flac'] = {}
     conf['flac']['samples'] = subprocess.check_output(['metaflac',
