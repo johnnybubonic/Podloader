@@ -438,9 +438,9 @@ def dbEntry(conf):
         cur.execute(query)
         cur.close()
         conn.close()
-    except:
-        print('{0}: There seems to have been some error when inserting into the DB. Check access (or it is a dupe).'.format(
-                                                datetime.datetime.now()))
+    except Exception as e:
+        print('{0}: There seems to have been some error when inserting into the DB: {1}'.format(
+                                                datetime.datetime.now(), e))
 
 def signEp(mediatype, conf):
     # No reason to call this for each file. Fix.
@@ -494,8 +494,9 @@ def uploadFile(conf):
     # and create if it doesn't exist.
     # Also, no reason to call this for each file.
     print('{0}: Syncing files to server...'.format(datetime.datetime.now()))
-    subprocess.call(['rsync',
+    subprocess.run(['rsync',
                     '-a',
+                    '--info=progress2',
                     '{0}'.format(conf['local']['mediadir']),
                     '{0}@{1}:{2}S{3}/.'.format(conf['rsync']['user'],
                                                 conf['rsync']['host'],
